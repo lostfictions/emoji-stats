@@ -1,0 +1,80 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DB_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["strictUndefinedChecks", "typedSql"]
+}
+
+model Emoji {
+  id         String       @id
+  name       String
+  createdOn  DateTime
+  deletedOn  DateTime?
+  guildId    String
+  EmojiUsage EmojiUsage[]
+}
+
+model EmojiUsage {
+  messageId String
+  userId    String
+  emojiId   String
+  channelId String
+  date      DateTime @default(now())
+  emoji     Emoji    @relation(fields: [emojiId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emojiId])
+  @@index([emojiId, date])
+  @@index([channelId, emojiId, date])
+}
+
+// thanks next-auth for requiring me to dump all these un-namespaced models in
+// my prisma schema. yes it is the entire rest of the file. no i don't need most
+// of this. yes i wish i could too. yes she's fine thanks for asking
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

@@ -1,0 +1,11 @@
+/node_modules
+
+/.next/
+
+.DS_Store
+.env*
+!.env.dummy
+
+/prisma/*.db
+/prisma/*.db-wal
+/prisma/*.db-shm
