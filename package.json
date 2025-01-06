@@ -10,7 +10,7 @@
     "db:migrate": "DB_URL='file:dev.db' prisma migrate deploy",
     "db:generate": "DB_URL='file:dev.db' prisma generate --no-hints --sql",
     "studio": "prisma studio",
-    "test": "run-p -cl test:*",
+    "test": "run-s db:generate && run-p -cl test:*",
     "test:eslint": "eslint --color '{src,test}/**/*.{js,ts,tsx}'",
     "test:prettier": "prettier -l '{src,test}/**/*.{css,js,ts,tsx}'",
     "test:ts": "tsc --pretty --noEmit",
