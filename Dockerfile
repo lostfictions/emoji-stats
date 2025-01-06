@@ -1,4 +1,5 @@
-ARG NODE_VERSION
+# should match value in .node-version file
+ARG NODE_VERSION=22.12.0
 
 FROM node:${NODE_VERSION}-slim AS build
 WORKDIR /app
