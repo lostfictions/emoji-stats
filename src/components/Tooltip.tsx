@@ -10,8 +10,7 @@ import {
   isValidElement,
   cloneElement,
   type ReactNode,
-  type HTMLProps,
-  type RefObject,
+  type ReactElement,
 } from "react";
 
 import {
@@ -58,7 +57,7 @@ function useTooltip({
     onOpenChange: setOpen,
     whileElementsMounted: autoUpdate,
     middleware: [
-      offset(5),
+      offset(8),
       flip({
         crossAxis: placement.includes("-"),
         fallbackAxisSideDirection: "start",
@@ -125,43 +124,31 @@ export function Tooltip({
 
 export function TooltipTrigger({
   children,
-  asChild = false,
-  ref: propRef,
-  ...props
-}: HTMLProps<HTMLElement> & {
-  asChild?: boolean;
-  ref?: RefObject<HTMLElement>;
+}: {
+  children: ReactElement<HTMLElement | SVGElement>;
 }) {
   const context = useTooltipContext();
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
   const childrenRef = (children as any).ref;
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  const ref = useMergeRefs([context.refs.setReference, propRef, childrenRef]);
+  const ref = useMergeRefs([context.refs.setReference, childrenRef]);
 
-  // `asChild` allows the user to pass any element as the anchor
-  if (asChild && isValidElement(children)) {
-    return cloneElement(
+  if (!isValidElement(children)) {
+    console.error(
+      "Expected valid React element for tooltip trigger, got",
       children,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      context.getReferenceProps({
-        ref,
-        ...props,
-        // @ts-expect-error no idea chief
-        ...children.props,
-        "data-state": context.open ? "open" : "closed",
-      }),
     );
+    throw new Error(`Invalid React element for tooltip trigger`);
   }
 
-  return (
-    <button
-      ref={ref}
-      // The user can style the trigger based on the state
-      data-state={context.open ? "open" : "closed"}
-      {...context.getReferenceProps(props)}
-    >
-      {children}
-    </button>
+  return cloneElement(
+    children,
+    context.getReferenceProps({
+      ref,
+      ...children.props,
+      // @ts-expect-error data props are always valid
+      "data-state": context.open ? "open" : "closed",
+    }),
   );
 }
 

@@ -82,7 +82,7 @@ export function Chart({ data }: { data: getEmojiByDate.Result[] }) {
           yAccessor={(d) => d.count}
           renderGlyph={({ datum: e, x, y, color }) => (
             <Tooltip>
-              <TooltipTrigger asChild>
+              <TooltipTrigger>
                 <image
                   x={x - 8 + offsetsForDateAndId[`${e.day} | ${e.id}`] * 18}
                   y={y - 8}
