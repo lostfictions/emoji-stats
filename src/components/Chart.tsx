@@ -60,7 +60,7 @@ export function Chart({ data }: { data: EmojiByDate }) {
 
   const colorScale = d3.scaleOrdinal().range(d3.schemeSet3);
 
-  const xScale = d3.scaleUtc().domain([minDate, maxDate]).range([0, 100]);
+  const xScale = d3.scaleUtc().domain([minDate, maxDate]).range([10, 90]);
 
   const formatXTick = xScale.tickFormat(undefined, "%a %d");
 
@@ -97,14 +97,13 @@ export function Chart({ data }: { data: EmojiByDate }) {
     >
       {/* X axis */}
       <svg className="absolute inset-0 h-[calc(100%-var(--marginTop))] w-[calc(100%-var(--marginLeft)-var(--marginRight))] translate-x-[var(--marginLeft)] translate-y-[var(--marginTop)] overflow-visible">
-        {xScale.ticks().map((t, i) => (
+        {/* FIXME: count number of ticks? */}
+        {xScale.ticks(4).map((t, i) => (
           <text
             key={i}
             x={`${xScale(t)}%`}
             y="100%"
-            textAnchor={
-              i === 0 ? "start" : i === data.length - 1 ? "end" : "middle"
-            }
+            textAnchor="middle"
             fill="currentColor"
             className="select-none text-sm"
           >
