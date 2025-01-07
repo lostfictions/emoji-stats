@@ -187,27 +187,22 @@ export function Chart({ data }: { data: EmojiByDate }) {
         </svg>
       </svg>
 
-      {/* FIXME: bugged? doesn't update on window resize :( */}
       {/* images */}
       <svg className="absolute inset-0 h-[calc(100%-var(--marginTop)-var(--marginBottom))] w-[calc(100%-var(--marginLeft)-var(--marginRight))] translate-x-[var(--marginLeft)] translate-y-[var(--marginTop)] overflow-visible">
-        {data.map((d) => {
-          const key = `${d.day} | ${d.id}`;
-          const x = xScale(new Date(d.day));
-          const y = yScale(Number(d.count));
-          return (
-            <image
-              key={key}
-              className="size-4 object-contain"
-              style={
-                {
-                  x: `calc(${x}% - 8px + ${offsetsForDateAndId[key]}px * 18)`,
-                  y: `calc(${y}% - 8px)`,
-                } as CSSProperties
-              }
-              href={`https://cdn.discordapp.com/emojis/${d.id}.png`}
-            />
-          );
-        })}
+        {data.map((d) => (
+          <image
+            key={`${d.day} | ${d.id}`}
+            x={`${xScale(new Date(d.day))}%`}
+            y={`${yScale(Number(d.count))}%`}
+            style={
+              {
+                "--offset": offsetsForDateAndId[`${d.day} | ${d.id}`],
+              } as CSSProperties
+            }
+            className="size-4 -translate-y-2 translate-x-[calc(var(--offset)*18px-8px)] object-contain"
+            href={`https://cdn.discordapp.com/emojis/${d.id}.png`}
+          />
+        ))}
       </svg>
     </div>
   );
