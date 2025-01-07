@@ -11,8 +11,7 @@ import {
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "./Tooltip";
 
-// FIXME: need custom type, prisma's inference isn't all it's chalked up to be
-import type { getEmojiByDate } from "@prisma/client/sql";
+import type { EmojiByDate } from "~/app/server/[guild]/page";
 
 const fmt = new Intl.DateTimeFormat("en-US", {
   weekday: "short",
@@ -21,15 +20,15 @@ const fmt = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-export function Chart({ data }: { data: getEmojiByDate.Result[] }) {
+export function Chart({ data }: { data: EmojiByDate }) {
   const offsetsForDateAndId = useMemo(() => {
     const o: Record<string, number> = {};
     const byDate = Object.values(
       Object.groupBy(data, (d) => `${d.day} ${d.count}`),
     );
     for (const group of byDate) {
-      for (let i = 0; i < group.length; i++) {
-        const e = group[i];
+      for (let i = 0; i < group!.length; i++) {
+        const e = group![i];
         o[`${e.day} | ${e.id}`] = i + 1;
       }
     }
@@ -101,7 +100,7 @@ export function Chart({ data }: { data: getEmojiByDate.Result[] }) {
                   </div>
                   <div>
                     Used {e.count} {e.count === 1 ? "time" : "times"} on{" "}
-                    {fmt.format(new Date(e.day!))}
+                    {fmt.format(new Date(e.day))}
                   </div>
                 </div>
               </TooltipContent>

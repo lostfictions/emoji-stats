@@ -1,6 +1,5 @@
 import { notFound, unauthorized } from "next/navigation";
 import { formatDistanceToNowStrict } from "date-fns";
-import { getEmojiByDate } from "@prisma/client/sql";
 
 import { auth, signOut as authSignOut, type Guild } from "~/auth";
 import prisma from "~/db";
@@ -50,14 +49,55 @@ async function signOut() {
   await authSignOut();
 }
 
+export type EmojiByDate = {
+  day: string;
+  id: string;
+  name: string;
+  count: bigint;
+}[];
+
+function getEmojiByDate({
+  guild,
+  startTime,
+  endTime,
+}: {
+  guild: string;
+  startTime: number;
+  endTime: number;
+}): Promise<EmojiByDate> {
+  // note that we GROUP BY formatted date here, which can lead to
+  // inconsistencies since everything is in UTC (eg. emoji usages may be
+  // bucketed into future dates). strftime() accepts an offset, but there's no
+  // easy way to get the client's timezone when it requests a page (we could
+  // send it along as a header or param in an api request, but not a page
+  // request). rather than doing elaborate bookkeeping to make this work,
+  // let's... somewhat arbitrarily set this to PST. that means users who are on
+  // UTC-4 (eg. EDT) will see their messages posted up until 4am will be
+  // bucketed to the previous day, which is fine. the real issue is for people
+  // outside the Americas... sorry folks, maybe i'll fix this someday.
+  return prisma.$queryRaw`
+    SELECT
+      strftime('%F', ROUND(date / 1000), 'unixepoch', '-08:00') day,
+      id,
+      name,
+      count(1) count
+    FROM EmojiUsage u, Emoji e
+    WHERE
+      u.emojiId = e.id
+      AND guildId = ${guild}
+      AND date > ${startTime}
+      AND date < ${endTime}
+    GROUP BY emojiId, day
+    ORDER BY day ASC, count DESC;
+  `;
+}
+
 async function EmojiData({ guild }: { guild: Guild }) {
-  const emojiByDate = await prisma.$queryRawTyped(
-    getEmojiByDate(
-      guild.id,
-      Date.now() - 1000 * 60 * 60 * 24 * 60,
-      Date.now() + 1000 * 60 * 60 * 24,
-    ),
-  );
+  const emojiByDate = await getEmojiByDate({
+    guild: guild.id,
+    startTime: Date.now() - 1000 * 60 * 60 * 24 * 60,
+    endTime: Date.now() + 1000 * 60 * 60 * 24,
+  });
 
   const emojiWithUsage = await prisma.emoji.findMany({
     where: { guildId: guild.id },
