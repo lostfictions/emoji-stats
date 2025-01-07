@@ -124,7 +124,7 @@ export function Chart({ data }: { data: EmojiByDate }) {
                 y={`${yScale(Number(value))}%`}
                 alignmentBaseline="middle"
                 textAnchor="end"
-                className="text-xs tabular-nums text-gray-600"
+                className="select-none text-xs tabular-nums text-gray-600"
                 fill="currentColor"
               >
                 {value}
