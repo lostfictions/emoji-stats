@@ -116,7 +116,7 @@ export function Chart({ data }: { data: EmojiByDate }) {
       <svg className="absolute inset-0 h-[calc(100%-var(--marginTop)-var(--marginBottom))] translate-y-[var(--marginTop)] overflow-visible">
         <g className="translate-x-4">
           {yScale
-            .ticks(8)
+            .ticks(20)
             .map(yScale.tickFormat(8, "d"))
             .map((value, i) => (
               <text
@@ -142,7 +142,7 @@ export function Chart({ data }: { data: EmojiByDate }) {
         >
           {/* Grid lines */}
           {yScale
-            .ticks(8)
+            .ticks(20)
             .map(yScale.tickFormat(8, "d"))
             .map((active, i) => (
               <g

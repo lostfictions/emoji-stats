@@ -32,7 +32,7 @@ const fmt = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-export function ChartVis({ data }: { data: EmojiByDate }) {
+export function Chart({ data }: { data: EmojiByDate }) {
   const offsetsForDateAndId = useMemo(() => {
     const o: Record<string, number> = {};
     const byDate = Object.values(groupBy(data, (d) => `${d.day} ${d.count}`));
