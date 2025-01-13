@@ -1,6 +1,6 @@
 import * as d3 from "d3";
 
-import { Tooltip } from "./Tooltips";
+import { Tooltip } from "./ChartTooltip";
 
 import type { EmojiByDate } from "~/app/server/[guild]/page";
 import type { CSSProperties } from "react";
