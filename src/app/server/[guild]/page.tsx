@@ -5,6 +5,7 @@ import { auth, signOut as authSignOut, type Guild } from "~/auth";
 import prisma from "~/db";
 import { Header } from "~/components/Header";
 import { Chart } from "~/components/Chart";
+import { Tooltips } from "~/components/Tooltips";
 
 export default async function Home({
   params,
@@ -118,7 +119,9 @@ async function EmojiData({ guild }: { guild: Guild }) {
         </div>
 
         <div className="h-[70vh] min-h-96 w-[90vw] sm:w-[80vw]">
-          <Chart data={emojiByDate} />
+          <Tooltips>
+            <Chart data={emojiByDate} />
+          </Tooltips>
         </div>
       </div>
       <div className="mt-4 flex flex-col items-center rounded bg-slate-800 p-4">

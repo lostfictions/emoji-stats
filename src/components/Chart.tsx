@@ -3,23 +3,16 @@ import type { EmojiByDate } from "~/app/server/[guild]/page";
 import type { CSSProperties } from "react";
 
 /**
- * Object.groupBy() but it returns a Record<K, T[]> instead of a
+ * This is `Object.groupBy()`, just typed as Record<K, T[]> instead of
  * Partial<Record<K, T[]>>. see
- * https://github.com/microsoft/TypeScript/pull/56805#discussion_r1439940587 for
- * details.
+ * https://github.com/microsoft/TypeScript/pull/56805#discussion_r1439940587
+ * for details.
  */
 function groupBy<K extends PropertyKey, T>(
   ...params: Parameters<typeof Object.groupBy<K, T>>
 ) {
   return Object.groupBy(...params) as Record<K, T[]>;
 }
-
-const fmt = new Intl.DateTimeFormat("en-US", {
-  weekday: "short",
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
 
 // based on https://buildui.com/recipes/responsive-line-chart
 export function Chart({ data }: { data: EmojiByDate }) {
@@ -192,6 +185,7 @@ export function Chart({ data }: { data: EmojiByDate }) {
         {data.map((d) => (
           <image
             key={`${d.day} | ${d.id}`}
+            data-tooltip={`${d.name}|${d.id}|${d.day}|${d.count}|${String(colorScale(d.id))}`}
             x={`${xScale(new Date(d.day))}%`}
             y={`${yScale(Number(d.count))}%`}
             style={
