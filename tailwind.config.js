@@ -5,5 +5,4 @@ module.exports = /** @type {import('tailwindcss').Config}} */ ({
     fontFamily: {},
     extend: {},
   },
-  plugins: [require("@tailwindcss/forms")],
 });
