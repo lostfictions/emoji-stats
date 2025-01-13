@@ -1,4 +1,7 @@
 import * as d3 from "d3";
+
+import { Tooltip } from "./Tooltips";
+
 import type { EmojiByDate } from "~/app/server/[guild]/page";
 import type { CSSProperties } from "react";
 
@@ -183,19 +186,23 @@ export function Chart({ data }: { data: EmojiByDate }) {
       {/* images */}
       <svg className="absolute inset-0 h-[calc(100%-var(--marginTop)-var(--marginBottom))] w-[calc(100%-var(--marginLeft)-var(--marginRight))] translate-x-[var(--marginLeft)] translate-y-[var(--marginTop)] overflow-visible">
         {data.map((d) => (
-          <image
+          <Tooltip
             key={`${d.day} | ${d.id}`}
-            data-tooltip={`${d.name}|${d.id}|${d.day}|${d.count}|${String(colorScale(d.id))}`}
-            x={`${xScale(new Date(d.day))}%`}
-            y={`${yScale(Number(d.count))}%`}
-            style={
-              {
-                "--offset": offsetsForDateAndId[`${d.day} | ${d.id}`],
-              } as CSSProperties
-            }
-            className="size-4 -translate-y-2 translate-x-[calc(var(--offset)*18px-8px)] object-contain"
-            href={`https://cdn.discordapp.com/emojis/${d.id}.png`}
-          />
+            d={d}
+            color={String(colorScale(d.id))}
+          >
+            <image
+              x={`${xScale(new Date(d.day))}%`}
+              y={`${yScale(Number(d.count))}%`}
+              style={
+                {
+                  "--offset": offsetsForDateAndId[`${d.day} | ${d.id}`],
+                } as CSSProperties
+              }
+              className="size-4 -translate-y-2 translate-x-[calc(var(--offset)*18px-8px)] object-contain"
+              href={`https://cdn.discordapp.com/emojis/${d.id}.png`}
+            />
+          </Tooltip>
         ))}
       </svg>
     </div>

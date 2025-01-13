@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, type ReactNode, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, type ReactNode } from "react";
 
 import {
   useFloating,
@@ -16,9 +16,10 @@ import {
   useInteractions,
   FloatingPortal,
   FloatingArrow,
-  type Placement,
   type ReferenceType,
 } from "@floating-ui/react";
+
+import type { EmojiByDate } from "~/app/server/[guild]/page";
 
 const fmt = new Intl.DateTimeFormat("en-US", {
   weekday: "short",
@@ -27,29 +28,19 @@ const fmt = new Intl.DateTimeFormat("en-US", {
   year: "numeric",
 });
 
-type NodeType = SVGImageElement;
-
-interface TooltipOptions {
-  placement?: Placement;
-}
-
-function useTooltip({ placement = "top" }: TooltipOptions = {}) {
+function useTooltip() {
   const [open, setOpen] = useState(false);
 
   const arrowRef = useRef<SVGSVGElement>(null);
 
   const data = useFloating({
-    placement,
+    placement: "top",
     open,
     onOpenChange: setOpen,
     whileElementsMounted: autoUpdate,
     middleware: [
       offset(8),
-      flip({
-        crossAxis: placement.includes("-"),
-        fallbackAxisSideDirection: "start",
-        padding: 5,
-      }),
+      flip({ fallbackAxisSideDirection: "start", padding: 5 }),
       shift({ padding: 5 }),
       arrow({ element: arrowRef }),
     ],
@@ -70,85 +61,56 @@ function useTooltip({ placement = "top" }: TooltipOptions = {}) {
   );
 }
 
-export function Tooltips({ children }: { children: ReactNode }) {
-  const wrapperRef = useRef<HTMLDivElement>(null);
+export function Tooltip({
+  children,
+  d,
+  color,
+}: {
+  children: ReactNode;
+  d: EmojiByDate[0];
+  color: string;
+}) {
+  const tooltip = useTooltip();
 
-  const [images, setImages] = useState<NodeType[] | null>(null);
+  const wrapperRef = useRef<SVGGElement>(null);
 
   useEffect(() => {
-    if (!wrapperRef.current) {
-      setImages(null);
-    } else {
-      const tmp = [
-        ...wrapperRef.current.querySelectorAll<NodeType>("image[data-tooltip]"),
-      ];
-
-      console.log(`got ${tmp.length} results`);
-      setImages(tmp);
-    }
-  }, [setImages]);
+    tooltip.refs.setReference(
+      (wrapperRef.current?.firstChild as ReferenceType) ?? null,
+    );
+  }, [tooltip.refs]);
 
   return (
-    <div ref={wrapperRef} className="contents">
-      {children}
-      {images?.map((img, i) => {
-        const [name, id, day, count, color] =
-          img.dataset["tooltip"]!.split("|");
-
-        return (
-          <Tooltip key={i} refEl={img} arrowClass="fill-slate-900">
+    <>
+      <g ref={wrapperRef}>{children}</g>
+      {tooltip.open ? (
+        <FloatingPortal>
+          <div
+            ref={tooltip.refs.setFloating}
+            style={tooltip.floatingStyles}
+            {...tooltip.getFloatingProps()}
+          >
             <div className="flex flex-col items-center gap-1 rounded bg-slate-900 px-4 py-2 text-white">
               <div className="flex items-center gap-2">
                 <img
                   className="size-4 object-contain"
-                  src={`https://cdn.discordapp.com/emojis/${id}.png`}
+                  src={`https://cdn.discordapp.com/emojis/${d.id}.png`}
                 />
-                <div style={{ color }}>:{name}:</div>
+                <div style={{ color }}>:{d.name}:</div>
               </div>
               <div>
-                Used {count} {count === "1" ? "time" : "times"} on{" "}
-                {fmt.format(new Date(day))}
+                Used {d.count} {d.count === 1n ? "time" : "times"} on{" "}
+                {fmt.format(new Date(d.day))}
               </div>
             </div>
-          </Tooltip>
-        );
-      })}
-    </div>
-  );
-}
-
-function Tooltip({
-  refEl,
-  children,
-  arrowClass,
-}: {
-  refEl: ReferenceType;
-  children: ReactNode;
-  arrowClass?: string;
-}) {
-  const tooltip = useTooltip();
-
-  useEffect(() => {
-    tooltip.refs.setReference(refEl);
-    return () => tooltip.refs.setReference(null);
-  }, [refEl, tooltip.refs]);
-
-  if (!tooltip.open) return null;
-
-  return (
-    <FloatingPortal>
-      <div
-        ref={tooltip.refs.setFloating}
-        style={tooltip.floatingStyles}
-        {...tooltip.getFloatingProps()}
-      >
-        {children}
-        <FloatingArrow
-          ref={tooltip.arrowRef}
-          context={tooltip.context}
-          className={arrowClass}
-        />
-      </div>
-    </FloatingPortal>
+            <FloatingArrow
+              ref={tooltip.arrowRef}
+              context={tooltip.context}
+              className="fill-slate-900"
+            />
+          </div>
+        </FloatingPortal>
+      ) : null}
+    </>
   );
 }
