@@ -1,4 +1,5 @@
 import * as d3 from "d3";
+import { differenceInDays } from "date-fns";
 
 import { Tooltip } from "./ChartTooltip";
 
@@ -40,8 +41,10 @@ export function Chart({ data }: { data: EmojiByDate }) {
     .nice()
     .range([100, 0]);
 
-  // TODO: scale to number of days
-  const colWidth = 6;
+  const dateCount = differenceInDays(maxDate, minDate);
+  console.log(dateCount);
+
+  const colWidth = 80 / dateCount - 2;
 
   return (
     <div
@@ -57,8 +60,7 @@ export function Chart({ data }: { data: EmojiByDate }) {
     >
       {/* X axis */}
       <svg className="absolute inset-0 h-[calc(100%-var(--marginTop))] w-[calc(100%-var(--marginLeft)-var(--marginRight))] translate-x-[var(--marginLeft)] translate-y-[var(--marginTop)] overflow-visible">
-        {/* TODO: count number of days */}
-        {xScale.ticks(15).map((t, i) => (
+        {xScale.ticks(dateCount).map((t, i) => (
           <text
             key={i}
             x={`${xScale(t)}%`}
