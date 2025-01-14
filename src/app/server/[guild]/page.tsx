@@ -1,10 +1,11 @@
 import { notFound, unauthorized } from "next/navigation";
-import { formatDistanceToNowStrict } from "date-fns";
+import { differenceInMonths, formatDistanceToNowStrict } from "date-fns";
 
 import { auth, signOut as authSignOut, type Guild } from "~/auth";
 import prisma from "~/db";
 import { Header } from "~/components/Header";
 import { Chart } from "~/components/Chart";
+import cx from "~/lib/cx";
 
 export default async function Home({
   params,
@@ -120,6 +121,8 @@ async function EmojiData({ guild }: { guild: Guild }) {
     year: "numeric",
   });
 
+  const now = new Date();
+
   return (
     <div className="flex flex-col">
       <div className="mt-4 rounded bg-slate-800 p-4">
@@ -155,10 +158,15 @@ async function EmojiData({ guild }: { guild: Guild }) {
                 <div className="flex-1 justify-self-start">
                   <span>:{e.name}:</span>
                   <span
-                    className="ml-4 text-slate-50/60"
+                    className={cx(
+                      "ml-4 text-sm",
+                      differenceInMonths(now, e.createdOn) > 6
+                        ? "text-slate-50/20"
+                        : "text-slate-50/70",
+                    )}
                     title={`Added ${e.createdOn.toDateString()}`}
                   >
-                    {`(Added ${formatDistanceToNowStrict(e.createdOn, { addSuffix: true })})`}
+                    {`(${formatDistanceToNowStrict(e.createdOn)} old)`}
                   </span>
                 </div>
                 <div>{e._count.EmojiUsage}</div>
