@@ -8,6 +8,14 @@ import type { CSSProperties } from "react";
 
 // based on https://buildui.com/recipes/responsive-line-chart
 export function Chart({ data }: { data: EmojiByDate }) {
+  if (data.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center text-2xl">
+        nothing to show! use some reacts.....
+      </div>
+    );
+  }
+
   const minDate = new Date(
     Math.min(...data.map((d) => new Date(d.day).getTime())),
   );
@@ -42,7 +50,6 @@ export function Chart({ data }: { data: EmojiByDate }) {
     .range([100, 0]);
 
   const dateCount = differenceInDays(maxDate, minDate);
-  console.log(dateCount);
 
   const colWidth = 80 / dateCount - 2;
 
