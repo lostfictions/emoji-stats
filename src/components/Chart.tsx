@@ -19,7 +19,8 @@ export function Chart({ data }: { data: EmojiByDate }) {
   const series = d3
     .stack<[string, d3.InternMap<string, EmojiByDate[0]>]>()
     .keys([...new Set(data.map((d) => d.name))])
-    .value(([, group], key) => Number(group.get(key)?.count ?? 0))(
+    .value(([, group], key) => Number(group.get(key)?.count ?? 0))
+    .order(d3.stackOrderDescending)(
     // @ts-expect-error pooping your pants constantly: the d3 story
     d3.index(
       data,
@@ -39,6 +40,7 @@ export function Chart({ data }: { data: EmojiByDate }) {
     .nice()
     .range([100, 0]);
 
+  // TODO: scale to number of days
   const colWidth = 6;
 
   return (
@@ -55,8 +57,8 @@ export function Chart({ data }: { data: EmojiByDate }) {
     >
       {/* X axis */}
       <svg className="absolute inset-0 h-[calc(100%-var(--marginTop))] w-[calc(100%-var(--marginLeft)-var(--marginRight))] translate-x-[var(--marginLeft)] translate-y-[var(--marginTop)] overflow-visible">
-        {/* FIXME: count number of ticks? */}
-        {xScale.ticks(4).map((t, i) => (
+        {/* TODO: count number of days */}
+        {xScale.ticks(15).map((t, i) => (
           <text
             key={i}
             x={`${xScale(t)}%`}
@@ -139,7 +141,6 @@ export function Chart({ data }: { data: EmojiByDate }) {
                   color={String(colorScale(d.id))}
                 >
                   <rect
-                    vectorEffect="non-scaling-stroke"
                     fill={colorScale(d.id) as string}
                     x={x - colWidth / 2}
                     width={colWidth}
@@ -164,12 +165,15 @@ export function Chart({ data }: { data: EmojiByDate }) {
 
             const d = map.get(s.key)!;
 
-            if (low === high || high - low < 3) return null;
+            // TODO: calculate definite height based on chart size
+            const proportion = yScale(low) - yScale(high);
+
+            if (low === high || proportion < 4) return null;
 
             return (
               <image
                 key={`${d.day} | ${d.id}`}
-                opacity={0.5}
+                opacity={0.8}
                 x={`${xScale(new Date(d.day))}%`}
                 y={`${yScale((high + low) / 2)}%`}
                 className="size-4 -translate-x-2 -translate-y-2 object-contain"
