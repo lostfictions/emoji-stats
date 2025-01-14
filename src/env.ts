@@ -10,6 +10,7 @@ export const {
   DISCORD_CLIENT_SECRET,
   DISCORD_TOKEN,
   ALLOWED_DISCORD_SERVERS,
+  AUTH_URL,
 } = parseEnv(process.env, {
   DB_URL: {
     schema: z.string().startsWith("file:"),
@@ -37,6 +38,11 @@ export const {
       "with Discord will only successfully authenticate if they belong to at",
       "least one of these orgs.",
     ].join("\n"),
+  },
+  AUTH_URL: {
+    schema: z.string().url().optional(),
+    description:
+      "The domain the site is running on. Optional: auth.js will try to infer it, but we also use it for OpenGraph tags.",
   },
   // Validated but not exported; pulled directly from process.env by next-auth.
   NEXTAUTH_SECRET: {

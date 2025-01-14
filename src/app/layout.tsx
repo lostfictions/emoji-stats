@@ -1,5 +1,7 @@
 import { Inter_Tight } from "next/font/google";
 
+import { AUTH_URL } from "~/env";
+
 import type { Metadata } from "next";
 
 import "./index.css";
@@ -14,6 +16,9 @@ export const metadata: Metadata = {
   title: "emoji stats",
   description: "see what custom emojos are in vogue",
 };
+if (AUTH_URL) {
+  metadata.openGraph = { images: new URL("/og.png", AUTH_URL) };
+}
 
 export default async function RootLayout({
   children,
