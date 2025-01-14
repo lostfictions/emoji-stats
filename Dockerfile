@@ -10,18 +10,22 @@ RUN apt-get update -y \
 RUN corepack enable
 COPY pnpm-lock.yaml ./
 RUN pnpm fetch
-COPY package.json next.config.mjs postcss.config.json tailwind.config.js tsconfig.json ./
+COPY package.json ./
+RUN pnpm install --offline --frozen-lockfile
+COPY next.config.mjs postcss.config.json tailwind.config.js tsconfig.json ./
 COPY src ./src
 COPY prisma ./prisma
 # use env file with dummy values for build
 COPY .env.dummy ./.env.local
-RUN pnpm install --offline --frozen-lockfile
 # disable prisma telemetry
 ENV CHECKPOINT_DISABLE=1
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm db:migrate && DB_URL='file:dev.db' pnpm build
 # we ignore discord.js from next's standalone tracing via /* webpack-ignore */,
 # so it -- and its transitive dependencies -- need to be copied over manually.
+# this is a bit annoying to do here but docker's COPY doesn't have any option to
+# make it behave like `cp -r`, so we can't really split it out to a separate
+# stage.
 COPY package.json ./package-old.json
 RUN jq '{packageManager, dependencies: (.dependencies | {"discord.js": .["discord.js"]})}' package-old.json > package.json \
   && rm -rf node_modules \
