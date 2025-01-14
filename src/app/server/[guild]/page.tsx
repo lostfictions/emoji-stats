@@ -110,6 +110,16 @@ async function EmojiData({ guild }: { guild: Guild }) {
     orderBy: { EmojiUsage: { _count: "desc" } },
   });
 
+  const {
+    _min: { date: earliest },
+  } = await prisma.emojiUsage.aggregate({ _min: { date: true } });
+
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
   return (
     <div className="flex flex-col">
       <div className="mt-4 rounded bg-slate-800 p-4">
@@ -124,6 +134,9 @@ async function EmojiData({ guild }: { guild: Guild }) {
       <div className="mt-4 flex flex-col items-center rounded bg-slate-800 p-4">
         <div className="flex justify-center text-xl font-bold">
           All-time leaderboard
+        </div>
+        <div className="flex justify-center text-sm">
+          since {fmt.format(earliest!)}
         </div>
         <div className="mt-4 flex min-w-[90vw] max-w-[600px] flex-col gap-1 sm:min-w-[400px]">
           {emojiWithUsage.length === 0 ? (
