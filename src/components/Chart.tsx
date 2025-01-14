@@ -58,7 +58,7 @@ export function Chart({ data }: { data: EmojiByDate }) {
 
   const xScale = d3.scaleUtc().domain([minDate, maxDate]).range([10, 90]);
 
-  const formatXTick = xScale.tickFormat(undefined, "%a %d");
+  const formatXTick = xScale.tickFormat(undefined, "%b %e");
 
   const yScale = d3
     .scaleLinear()
