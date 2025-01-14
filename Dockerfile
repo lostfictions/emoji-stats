@@ -15,6 +15,9 @@ RUN pnpm install --offline --frozen-lockfile
 COPY next.config.mjs postcss.config.json tailwind.config.js tsconfig.json ./
 COPY src ./src
 COPY prisma ./prisma
+# we could just copy public/ directly into our runner image, but for uniformity the
+# build script expects it to be present to copy into the build folder.
+COPY public ./public
 # use env file with dummy values for build
 COPY .env.dummy ./.env.local
 # disable prisma telemetry
@@ -44,10 +47,9 @@ ENV CHECKPOINT_DISABLE=1
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs && \
   adduser --system --uid 1001 nextjs
-# standalone folder can go to the root of the workdir, but the static dir needs
-# its path preserved (ie. it ends up within the standalone dir)
+# we'd normally need to copy .next/static and the public folder too, but our
+# build script in package.json does that for us.
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "run-s db:generate && next dev",
-    "build": "run-s db:generate && next build && cp -r .next/static .next/standalone/.next/static",
+    "build": "run-s db:generate && next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "run-prod": "node --env-file='.env.local' .next/standalone/server.js",
     "db:generate": "prisma generate --no-hints",
     "db:migrate": "DB_URL='file:dev.db' prisma migrate deploy",
