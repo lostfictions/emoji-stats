@@ -35,7 +35,7 @@ function useTooltip() {
   const arrowRef = useRef<SVGSVGElement>(null);
 
   const data = useFloating({
-    placement: "top",
+    placement: "right",
     open,
     onOpenChange: setOpen,
     whileElementsMounted: autoUpdate,

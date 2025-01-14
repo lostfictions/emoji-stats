@@ -5,48 +5,8 @@ import { Tooltip } from "./ChartTooltip";
 import type { EmojiByDate } from "~/app/server/[guild]/page";
 import type { CSSProperties } from "react";
 
-/**
- * This is `Object.groupBy()`, just typed as Record<K, T[]> instead of
- * Partial<Record<K, T[]>>. see
- * https://github.com/microsoft/TypeScript/pull/56805#discussion_r1439940587
- * for details.
- */
-function groupBy<K extends PropertyKey, T>(
-  ...params: Parameters<typeof Object.groupBy<K, T>>
-) {
-  return Object.groupBy(...params) as Record<K, T[]>;
-}
-
 // based on https://buildui.com/recipes/responsive-line-chart
 export function Chart({ data }: { data: EmojiByDate }) {
-  /**
-   * multiple emoji might be stacked at the same location (eg. emoji A and emoji
-   * B might both have 3 uses on december 15). this calculates a position offset
-   * for the glyph to disambiguate them.
-   */
-  const offsetsForDateAndId = (() => {
-    const o: Record<string, number> = {};
-    const byDate = Object.values(groupBy(data, (d) => `${d.day} ${d.count}`));
-    for (const group of byDate) {
-      for (let i = 0; i < group.length; i++) {
-        const e = group[i];
-        o[`${e.day} | ${e.id}`] = i + 1;
-      }
-    }
-    return o;
-  })();
-
-  const grouped = Object.entries(
-    groupBy(
-      data.map((d) => ({
-        ...d,
-        day: new Date(d.day),
-        // convert bigint to number
-        count: Number(d.count),
-      })),
-      (d) => d.id,
-    ),
-  );
   const minDate = new Date(
     Math.min(...data.map((d) => new Date(d.day).getTime())),
   );
@@ -56,28 +16,30 @@ export function Chart({ data }: { data: EmojiByDate }) {
 
   const colorScale = d3.scaleOrdinal().range(d3.schemeSet3);
 
+  const series = d3
+    .stack<[string, d3.InternMap<string, EmojiByDate[0]>]>()
+    .keys([...new Set(data.map((d) => d.name))])
+    .value(([, group], key) => Number(group.get(key)?.count ?? 0))(
+    // @ts-expect-error pooping your pants constantly: the d3 story
+    d3.index(
+      data,
+      (d) => d.day,
+      (d) => d.name,
+    ),
+  );
+
   const xScale = d3.scaleUtc().domain([minDate, maxDate]).range([10, 90]);
 
   const formatXTick = xScale.tickFormat(undefined, "%b %e");
 
   const yScale = d3
     .scaleLinear()
-    .domain([0, d3.max(data.map((d) => Number(d.count))) ?? 0])
+    // @ts-expect-error sob
+    .domain([0, d3.max(series, (d) => d3.max(d, (p) => p[1]))])
+    .nice()
     .range([100, 0]);
 
-  const line = d3
-    .line<(typeof grouped)[0][1][0]>()
-    .x((d) => xScale(d.day))
-    .y((d) => yScale(Number(d.count)));
-
-  // FIXME: do these need to be sorted? note "Depending on this line generator’s
-  // associated curve, the given input data may need to be sorted by x-value
-  // before being passed to the line generator."
-  const ds = grouped.map(([id, d]) => [id, line(d)!] as const);
-
-  if (ds.length === 0) {
-    return null;
-  }
+  const colWidth = 6;
 
   return (
     <div
@@ -157,53 +119,65 @@ export function Chart({ data }: { data: EmojiByDate }) {
               </g>
             ))}
 
-          {/* Line */}
-          {ds.map(([id, d]) => (
-            <path
-              key={id}
-              d={d}
-              fill="none"
-              stroke={colorScale(id) as string}
-              strokeWidth="2"
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
+          {series.flatMap((s) =>
+            s.map((p) => {
+              const [low, high] = p;
+              const {
+                data: [date, map],
+              } = p;
 
-          {data.map((d) => (
-            <path
-              key={`${d.day} | ${d.id}`}
-              d={`M ${xScale(new Date(d.day))} ${yScale(Number(d.count))} l 0.0001 0`}
-              vectorEffect="non-scaling-stroke"
-              strokeWidth="8"
-              strokeLinecap="round"
-              fill="none"
-              stroke={colorScale(d.id) as string}
-            />
-          ))}
+              const d = map.get(s.key)!;
+
+              const x = xScale(new Date(date));
+
+              if (low === high) return null;
+
+              return (
+                <Tooltip
+                  key={`${d.day} | ${d.id}`}
+                  d={d}
+                  color={String(colorScale(d.id))}
+                >
+                  <rect
+                    vectorEffect="non-scaling-stroke"
+                    fill={colorScale(d.id) as string}
+                    x={x - colWidth / 2}
+                    width={colWidth}
+                    y={yScale(high)}
+                    height={yScale(low) - yScale(high)}
+                  />
+                </Tooltip>
+              );
+            }),
+          )}
         </svg>
       </svg>
 
       {/* images */}
-      <svg className="absolute inset-0 h-[calc(100%-var(--marginTop)-var(--marginBottom))] w-[calc(100%-var(--marginLeft)-var(--marginRight))] translate-x-[var(--marginLeft)] translate-y-[var(--marginTop)] overflow-visible">
-        {data.map((d) => (
-          <Tooltip
-            key={`${d.day} | ${d.id}`}
-            d={d}
-            color={String(colorScale(d.id))}
-          >
-            <image
-              x={`${xScale(new Date(d.day))}%`}
-              y={`${yScale(Number(d.count))}%`}
-              style={
-                {
-                  "--offset": offsetsForDateAndId[`${d.day} | ${d.id}`],
-                } as CSSProperties
-              }
-              className="size-4 -translate-y-2 translate-x-[calc(var(--offset)*18px-8px)] object-contain"
-              href={`https://cdn.discordapp.com/emojis/${d.id}.png`}
-            />
-          </Tooltip>
-        ))}
+      <svg className="pointer-events-none absolute inset-0 h-[calc(100%-var(--marginTop)-var(--marginBottom))] w-[calc(100%-var(--marginLeft)-var(--marginRight))] translate-x-[var(--marginLeft)] translate-y-[var(--marginTop)] overflow-visible">
+        {series.flatMap((s) =>
+          s.map((p) => {
+            const [low, high] = p;
+            const {
+              data: [, map],
+            } = p;
+
+            const d = map.get(s.key)!;
+
+            if (low === high || high - low < 3) return null;
+
+            return (
+              <image
+                key={`${d.day} | ${d.id}`}
+                opacity={0.5}
+                x={`${xScale(new Date(d.day))}%`}
+                y={`${yScale((high + low) / 2)}%`}
+                className="size-4 -translate-x-2 -translate-y-2 object-contain"
+                href={`https://cdn.discordapp.com/emojis/${d.id}.png`}
+              />
+            );
+          }),
+        )}
       </svg>
     </div>
   );
