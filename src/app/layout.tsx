@@ -12,6 +12,7 @@ const inter = Inter_Tight({
 
 export const metadata: Metadata = {
   title: "emoji stats",
+  description: "see what custom emojos are in vogue",
 };
 
 export default async function RootLayout({
