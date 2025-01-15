@@ -1,5 +1,7 @@
 // @ts-check
-export default /** @type {import('next').NextConfig} */ ({
+import { withSentryConfig } from "@sentry/nextjs";
+
+const nextConfig = /** @type {import('next').NextConfig} */ ({
   reactStrictMode: true,
   poweredByHeader: false,
   output: "standalone",
@@ -10,4 +12,15 @@ export default /** @type {import('next').NextConfig} */ ({
   experimental: {
     authInterrupts: true,
   },
+});
+
+// btw this balloons build time to about 4 minutes?? cool
+export default withSentryConfig(nextConfig, {
+  sourcemaps: { disable: true },
+  autoInstrumentServerFunctions: false,
+  autoInstrumentMiddleware: false,
+  autoInstrumentAppDirectory: false,
+  disableLogger: true,
+  telemetry: false,
+  silent: true,
 });

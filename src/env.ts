@@ -2,8 +2,6 @@
 
 import { parseEnv, z } from "znv";
 
-import * as Sentry from "@sentry/node";
-
 export const {
   DB_URL,
   DISCORD_CLIENT_ID,
@@ -59,14 +57,3 @@ export const {
 });
 
 export const isProd = process.env.NODE_ENV === "production";
-
-if (isProd) {
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    integrations: [
-      Sentry.captureConsoleIntegration({
-        levels: ["warn", "error", "debug", "assert"],
-      }),
-    ],
-  });
-}
