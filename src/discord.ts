@@ -9,6 +9,7 @@ export async function run() {
     GatewayIntentBits,
     GuildEmoji,
     ChannelType,
+    Partials,
   } = await import(
     /* webpackIgnore: true */
     "discord.js"
@@ -24,6 +25,15 @@ export async function run() {
       GatewayIntentBits.GuildMessageReactions,
       GatewayIntentBits.GuildExpressions,
     ],
+    // needed to receive all events, otherwise discord.js will silently drop
+    // many of them:
+    // https://discordjs.guide/popular-topics/reactions.html#listening-for-reactions-on-old-messages
+    partials: [
+      Partials.Message,
+      Partials.Reaction,
+      Partials.Channel,
+      Partials.User,
+    ],
   });
 
   client.on("threadCreate", (thread, newlyCreated) => {
@@ -34,40 +44,48 @@ export async function run() {
     }
   });
 
-  client.on("messageReactionAdd", ({ message, emoji }, user) => {
-    const channelType = message.channel.type;
-    if (
-      user.bot ||
-      !(emoji instanceof GuildEmoji) ||
-      !(
-        channelType === ChannelType.GuildText ||
+  client.on("messageReactionAdd", (reaction, user) => {
+    (async () => {
+      // no idea how much of this is necessary, discord.js is pretty opaque
+      // about this.
+      if (reaction.partial) await reaction.fetch();
+      if (user.partial) await user.fetch();
+      const { message, emoji } = reaction;
+      if (message.partial) await message.fetch();
+      if (message.channel.partial) await message.channel.fetch();
+
+      const channelType = message.channel.type;
+      if (
+        user.bot ||
+        !(emoji instanceof GuildEmoji) ||
+        !(
+          channelType === ChannelType.GuildText ||
+          channelType === ChannelType.PublicThread
+        )
+      ) {
+        return;
+      }
+
+      const channelId =
         channelType === ChannelType.PublicThread
-      )
-    ) {
-      return;
-    }
+          ? message.channel.parentId
+          : message.channelId;
 
-    const channelId =
-      channelType === ChannelType.PublicThread
-        ? message.channel.parentId
-        : message.channelId;
+      if (channelId == null) {
+        console.error(
+          `Can't retrieve parent for thread "${message.channel.name}" [${message.channelId}] (in guild "${message.guild?.name}" [${message.guildId}])`,
+        );
+        return;
+      }
 
-    if (channelId == null) {
-      console.error(
-        `Can't retrieve parent for thread "${message.channel.name}" [${message.channelId}] (in guild "${message.guild?.name}" [${message.guildId}])`,
-      );
-      return;
-    }
+      if (!emoji.name) {
+        console.error(
+          `Can't retrieve name for emoji "${emoji.name}" [${emoji.id}] (in guild "${message.guild?.name}" [${message.guildId}])`,
+        );
+        return;
+      }
 
-    if (!emoji.name) {
-      console.error(
-        `Can't retrieve name for emoji "${emoji.name}" [${emoji.id}] (in guild "${message.guild?.name}" [${message.guildId}])`,
-      );
-      return;
-    }
-
-    prisma.emojiUsage
-      .create({
+      await prisma.emojiUsage.create({
         data: {
           messageId: message.id,
           userId: user.id,
@@ -84,27 +102,34 @@ export async function run() {
             },
           },
         },
-      })
-      .catch((e: unknown) => {
-        throw e;
       });
+    })().catch((e: unknown) => {
+      throw e;
+    });
   });
 
-  client.on("messageReactionRemove", ({ message, emoji }, user) => {
-    const channelType = message.channel.type;
-    if (
-      user.bot ||
-      !(emoji instanceof GuildEmoji) ||
-      !(
-        channelType === ChannelType.GuildText ||
-        channelType === ChannelType.PublicThread
-      )
-    ) {
-      return;
-    }
+  client.on("messageReactionRemove", (reaction, user) => {
+    (async () => {
+      // mirrors reactionAdd logic above.
+      if (reaction.partial) await reaction.fetch();
+      if (user.partial) await user.fetch();
+      const { message, emoji } = reaction;
+      if (message.partial) await message.fetch();
+      if (message.channel.partial) await message.channel.fetch();
 
-    prisma.emojiUsage
-      .delete({
+      const channelType = message.channel.type;
+      if (
+        user.bot ||
+        !(emoji instanceof GuildEmoji) ||
+        !(
+          channelType === ChannelType.GuildText ||
+          channelType === ChannelType.PublicThread
+        )
+      ) {
+        return;
+      }
+
+      await prisma.emojiUsage.delete({
         where: {
           messageId_userId_emojiId: {
             messageId: message.id,
@@ -112,10 +137,10 @@ export async function run() {
             emojiId: emoji.id,
           },
         },
-      })
-      .catch((e: unknown) => {
-        throw e;
       });
+    })().catch((e: unknown) => {
+      throw e;
+    });
   });
 
   client.on("emojiUpdate", (emoji) => {
