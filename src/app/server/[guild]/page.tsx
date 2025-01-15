@@ -111,9 +111,12 @@ async function EmojiData({ guild }: { guild: Guild }) {
     orderBy: { EmojiUsage: { _count: "desc" } },
   });
 
-  const {
-    _min: { date: earliest },
-  } = await prisma.emojiUsage.aggregate({ _min: { date: true } });
+  // for consistency we need to use the same format as for the data above
+  const [{ earliest }] = await prisma.$queryRaw<[{ earliest: string }]>`
+    SELECT
+      strftime('%F', ROUND(min(date) / 1000), 'unixepoch', '-08:00') earliest
+    FROM EmojiUsage;
+  `;
 
   const now = new Date();
 
@@ -139,7 +142,8 @@ async function EmojiData({ guild }: { guild: Guild }) {
               month: "long",
               day: "numeric",
               year: "numeric",
-            }).format(earliest)}
+              timeZone: "utc",
+            }).format(new Date(earliest))}
           </div>
         ) : null}
         <div className="mt-4 flex min-w-[90vw] max-w-[600px] flex-col gap-1 sm:min-w-[400px]">
