@@ -119,6 +119,7 @@ async function EmojiData({ guild }: { guild: Guild }) {
     month: "long",
     day: "numeric",
     year: "numeric",
+    timeZone: "utc",
   });
 
   const now = new Date();
