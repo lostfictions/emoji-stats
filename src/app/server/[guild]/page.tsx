@@ -115,13 +115,6 @@ async function EmojiData({ guild }: { guild: Guild }) {
     _min: { date: earliest },
   } = await prisma.emojiUsage.aggregate({ _min: { date: true } });
 
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "utc",
-  });
-
   const now = new Date();
 
   return (
@@ -139,9 +132,16 @@ async function EmojiData({ guild }: { guild: Guild }) {
         <div className="flex justify-center text-xl font-bold">
           All-time leaderboard
         </div>
-        <div className="flex justify-center text-sm">
-          since {fmt.format(earliest!)}
-        </div>
+        {earliest ? (
+          <div className="flex justify-center text-sm">
+            since{" "}
+            {new Intl.DateTimeFormat("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            }).format(earliest)}
+          </div>
+        ) : null}
         <div className="mt-4 flex min-w-[90vw] max-w-[600px] flex-col gap-1 sm:min-w-[400px]">
           {emojiWithUsage.length === 0 ? (
             <div className="flex justify-center">No data available!</div>
