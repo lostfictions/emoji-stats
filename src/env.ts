@@ -2,7 +2,7 @@
 
 import { parseEnv, z } from "znv";
 
-// TODO: add sentry
+import * as Sentry from "@sentry/node";
 
 export const {
   DB_URL,
@@ -11,6 +11,7 @@ export const {
   DISCORD_TOKEN,
   ALLOWED_DISCORD_SERVERS,
   AUTH_URL,
+  SENTRY_DSN,
 } = parseEnv(process.env, {
   DB_URL: {
     schema: z.string().startsWith("file:"),
@@ -44,6 +45,9 @@ export const {
     description:
       "The domain the site is running on. Optional: auth.js will try to infer it, but we also use it for OpenGraph tags.",
   },
+  SENTRY_DSN: {
+    schema: z.string().min(1),
+  },
   // Validated but not exported; pulled directly from process.env by next-auth.
   NEXTAUTH_SECRET: {
     schema: z.string().min(1),
@@ -55,3 +59,14 @@ export const {
 });
 
 export const isProd = process.env.NODE_ENV === "production";
+
+if (isProd) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    integrations: [
+      Sentry.captureConsoleIntegration({
+        levels: ["warn", "error", "debug", "assert"],
+      }),
+    ],
+  });
+}
