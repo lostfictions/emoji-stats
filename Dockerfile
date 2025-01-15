@@ -23,6 +23,7 @@ COPY .env.dummy ./.env.local
 # disable prisma telemetry
 ENV CHECKPOINT_DISABLE=1
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV SENTRY_SUPPRESS_GLOBAL_ERROR_HANDLER_FILE_WARNING=1
 RUN pnpm db:migrate && DB_URL='file:dev.db' pnpm build
 # we ignore discord.js from next's standalone tracing via /* webpack-ignore */,
 # so it -- and its transitive dependencies -- need to be copied over manually.
