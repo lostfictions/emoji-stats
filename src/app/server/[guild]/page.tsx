@@ -68,14 +68,15 @@ function getEmojiByDate({
 }): Promise<EmojiByDate> {
   // note that we GROUP BY formatted date here, which can lead to
   // inconsistencies since everything is in UTC (eg. emoji usages may be
-  // bucketed into future dates). strftime() accepts an offset, but there's no
-  // easy way to get the client's timezone when it requests a page (we could
-  // send it along as a header or param in an api request, but not a page
-  // request). rather than doing elaborate bookkeeping to make this work,
-  // let's... somewhat arbitrarily set this to PST. that means users who are on
-  // UTC-4 (eg. EDT) will see their messages posted up until 4am will be
-  // bucketed to the previous day, which is fine. the real issue is for people
-  // outside the Americas... sorry folks, maybe i'll fix this someday.
+  // bucketed into what look like future dates relative to the user's local
+  // time). strftime() accepts an offset, but there's no easy way to get the
+  // client's timezone when it requests a page (we could send it along as a
+  // header or param in an api request, but not a page request). rather than
+  // doing elaborate bookkeeping to make this work, let's... somewhat
+  // arbitrarily set this to PST. that means users who are on UTC-4 (eg. EDT)
+  // will see their messages posted up until 4am will be bucketed to the
+  // previous day, which is fine. the real issue is for people outside the
+  // Americas... sorry folks, maybe i'll fix this someday.
   return prisma.$queryRaw`
     SELECT
       strftime('%F', ROUND(date / 1000), 'unixepoch', '-08:00') day,
@@ -94,10 +95,15 @@ function getEmojiByDate({
 }
 
 async function EmojiData({ guild }: { guild: Guild }) {
+  // FIXME: make these configurable, pass to <Chart /> so it can render ticks
+  // for leading and trailing empty days
+  const startTime = Date.now() - 1000 * 60 * 60 * 24 * 60;
+  const endTime = Date.now() + 1000 * 60 * 60 * 24;
+
   const emojiByDate = await getEmojiByDate({
     guild: guild.id,
-    startTime: Date.now() - 1000 * 60 * 60 * 24 * 60,
-    endTime: Date.now() + 1000 * 60 * 60 * 24,
+    startTime,
+    endTime,
   });
 
   const emojiWithUsage = await prisma.emoji.findMany({
@@ -111,7 +117,12 @@ async function EmojiData({ guild }: { guild: Guild }) {
     orderBy: { EmojiUsage: { _count: "desc" } },
   });
 
-  // for consistency we need to use the same format as for the data above
+  // to avoid inconsistencies in the rendered date we need to use the same
+  // strftime() with offset as in getEmojiByDate above.
+  //
+  // note that this query is across *all* usages, not scoped by guild. the
+  // earliest EmojiUsage row (roughly) represents when we started tracking, not
+  // the first time reactions were used in a given guild.
   const [{ earliest }] = await prisma.$queryRaw<[{ earliest: string }]>`
     SELECT
       strftime('%F', ROUND(min(date) / 1000), 'unixepoch', '-08:00') earliest

@@ -18,6 +18,8 @@ export default async function UnauthorizedPage() {
 
   return (
     <div className="flex h-screen flex-col items-center justify-center">
+      <div>nerds and dweebs keep out</div>
+      <div>everyone else:</div>
       <form action={signInWithDiscord}>
         <button
           type="submit"

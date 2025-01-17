@@ -4,6 +4,7 @@ import Discord from "next-auth/providers/discord";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { z } from "zod";
 import ky from "ky";
+import TTLCache from "@isaacs/ttlcache";
 
 import prisma from "~/db";
 
@@ -15,17 +16,22 @@ import {
 
 const allowedServers = new Set(ALLOWED_DISCORD_SERVERS);
 
+// guilds have more properties than this, but these are the ones we're
+// interested in. zod should strip out the other properties.
 export const guildsSchema = z.array(
   z.object({
-    id: z.string(),
-    name: z.string(),
-    icon: z.string(),
-    owner: z.boolean(),
-    permissions: z.number(),
-    permissions_new: z.string(),
-    features: z.array(z.string()),
+    id: z.string().min(1),
+    name: z.string().min(1),
+    icon: z.string().min(1),
   }),
 );
+
+export type Guilds = z.infer<typeof guildsSchema>;
+export type Guild = Guilds[0];
+
+// FIXME: clean, just trying to make sure next.js isn't pranking me
+console.log("building ttl cache");
+const cache = new TTLCache<string, Guilds>({ max: 1000, ttl: 60_000 });
 
 const getAllowedGuilds = async (token: string) => {
   // for reasons that absolutely baffle me, hitting the home route after the
@@ -42,13 +48,6 @@ const getAllowedGuilds = async (token: string) => {
 
   const guilds = await ky("https://discordapp.com/api/users/@me/guilds", {
     headers: { Authorization: `Bearer ${token}` },
-    fetch: (input, init) =>
-      // this seems to get ignored with the reason "(cache-control: no-cache
-      // (hard refresh))" even though the response doesn't seem to set these
-      // headers -- maybe our auth header disables it? fetch logging is disabled
-      // in production, so it's remarkably hard to tell whether anything is
-      // being cached at all.
-      fetch(input, { cache: "force-cache", next: { revalidate: 30 }, ...init }),
   }).json();
 
   return guildsSchema.parse(guilds).filter((g) => allowedServers.has(g.id));
@@ -83,11 +82,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return false;
       }
 
+      // always check on new sign-in
       const allowedGuilds = await getAllowedGuilds(token);
 
       if (allowedGuilds.length === 0) {
         return false;
       }
+
+      cache.set(token, allowedGuilds);
 
       // HACK: next-auth doesn't seem to update the account with the new tokens
       // when an existing account logs in??
@@ -145,7 +147,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
       }
 
-      const guilds = await getAllowedGuilds(access_token);
+      let guilds = cache.get(access_token);
+      if (!guilds) {
+        guilds = await getAllowedGuilds(access_token);
+        cache.set(access_token, guilds);
+      }
 
       if (guilds.length === 0) {
         console.warn("User does not appear to belong to any allowed guilds!");
@@ -155,14 +161,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       const { email, emailVerified, ...strippedUser } = user;
 
       const data = {
-        user: {
-          ...strippedUser,
-          guilds: guilds.map(({ name, icon, id }) => ({
-            name,
-            id,
-            icon: `https://cdn.discordapp.com/icons/${id}/${icon}.png`,
-          })),
-        },
+        user: { ...strippedUser, guilds },
         expires: session.expires,
       };
 
@@ -171,19 +170,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 });
 
-export interface Guild {
-  name: string;
-  icon: string;
-  id: string;
-}
-
 declare module "next-auth" {
   interface Session {
     user: {
       id: string;
       name: string;
       image: string;
-      guilds: Guild[];
+      guilds: Guilds;
     };
     expires: Date & string;
   }

@@ -8,6 +8,9 @@ import type { Guild } from "~/auth";
 
 const guildRowItem = "flex flex-row items-center gap-4 px-4";
 
+const iconUrlForGuild = ({ id, icon }: Guild) =>
+  `https://cdn.discordapp.com/icons/${id}/${icon}.png`;
+
 export function Header({
   activeGuild,
   otherGuilds,
@@ -23,7 +26,10 @@ export function Header({
     <header className="flex items-stretch justify-end bg-slate-950">
       {otherGuilds.length === 0 ? (
         <div className={guildRowItem}>
-          <img src={activeGuild.icon} className="size-8 rounded-full" />
+          <img
+            src={iconUrlForGuild(activeGuild)}
+            className="size-8 rounded-full"
+          />
           <div>{activeGuild.name}</div>
         </div>
       ) : (
@@ -68,7 +74,10 @@ export default function GuildMenu({
     <Menu>
       <MenuButton className="hover:bg-slate-900">
         <div className={guildRowItem}>
-          <img src={activeGuild.icon} className="size-8 rounded-full" />
+          <img
+            src={iconUrlForGuild(activeGuild)}
+            className="size-8 rounded-full"
+          />
           <div>{activeGuild.name}</div>
           <ChevronDown />
         </div>
@@ -86,7 +95,7 @@ export default function GuildMenu({
               data-guild={g.id}
             >
               <div className={guildRowItem}>
-                <img src={g.icon} className="size-8 rounded-full" />
+                <img src={iconUrlForGuild(g)} className="size-8 rounded-full" />
                 <div>{g.name}</div>
               </div>
             </Link>
