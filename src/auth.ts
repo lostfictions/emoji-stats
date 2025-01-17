@@ -22,7 +22,7 @@ export const guildsSchema = z.array(
   z.object({
     id: z.string().min(1),
     name: z.string().min(1),
-    icon: z.string().min(1).optional(),
+    icon: z.string().min(1).or(z.null()),
   }),
 );
 
