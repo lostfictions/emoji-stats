@@ -22,7 +22,7 @@ export const guildsSchema = z.array(
   z.object({
     id: z.string().min(1),
     name: z.string().min(1),
-    icon: z.string().min(1),
+    icon: z.string().min(1).optional(),
   }),
 );
 
@@ -71,7 +71,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     // users can only sign in if they're a member of a whitelisted org.
-    async signIn({ account }) {
+    async signIn({ account, profile, user }) {
       const token = account?.access_token;
 
       if (!token) {
@@ -81,6 +81,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
         return false;
       }
+
+      console.log("sign in for user", user.name, profile);
 
       // always check on new sign-in
       const allowedGuilds = await getAllowedGuilds(token);
