@@ -1,10 +1,10 @@
 import * as d3 from "d3";
+import { Fragment, type CSSProperties } from "react";
 import { differenceInDays } from "date-fns";
 
 import { Tooltip } from "./ChartTooltip";
 
 import type { EmojiByDate } from "~/app/server/[guild]/page";
-import type { CSSProperties } from "react";
 
 // based on https://buildui.com/recipes/responsive-line-chart
 export function Chart({ data }: { data: EmojiByDate }) {
@@ -40,8 +40,6 @@ export function Chart({ data }: { data: EmojiByDate }) {
 
   const xScale = d3.scaleUtc().domain([minDate, maxDate]).range([10, 90]);
 
-  const formatXTick = xScale.tickFormat(undefined, "%b %e");
-
   const yScale = d3
     .scaleLinear()
     // @ts-expect-error sob
@@ -49,9 +47,22 @@ export function Chart({ data }: { data: EmojiByDate }) {
     .nice()
     .range([100, 0]);
 
-  const dateCount = differenceInDays(maxDate, minDate);
+  const fmtWithMonth = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const fmtDayOfWeek = new Intl.DateTimeFormat("en-US", {
+    weekday: "narrow",
+  });
 
-  const colWidth = 80 / dateCount - 2;
+  const formatXTick = (date: Date) =>
+    date.getDate() === 1 || date === minDate
+      ? fmtWithMonth.format(date)
+      : String(date.getDate());
+
+  const dateCount = differenceInDays(maxDate, minDate);
+  const colWidth = Math.min(100 / dateCount - 2, 5);
+  console.log("colWidth", colWidth);
 
   return (
     <div
@@ -68,16 +79,28 @@ export function Chart({ data }: { data: EmojiByDate }) {
       {/* X axis */}
       <svg className="absolute inset-0 h-[calc(100%-var(--marginTop))] w-[calc(100%-var(--marginLeft)-var(--marginRight))] translate-x-[var(--marginLeft)] translate-y-[var(--marginTop)] overflow-visible">
         {xScale.ticks(dateCount).map((t, i) => (
-          <text
-            key={i}
-            x={`${xScale(t)}%`}
-            y="100%"
-            textAnchor="middle"
-            fill="currentColor"
-            className="select-none text-sm"
-          >
-            {formatXTick(t)}
-          </text>
+          <Fragment key={i}>
+            <text
+              x={`${xScale(t)}%`}
+              y="98.8%"
+              textAnchor="middle"
+              fill="currentColor"
+              className="select-none text-sm"
+            >
+              {formatXTick(t)}
+            </text>
+            <text
+              x={`${xScale(t)}%`}
+              y="99.5%"
+              textAnchor="middle"
+              dominantBaseline="hanging"
+              fill="currentColor"
+              opacity="0.5"
+              className="select-none text-xs"
+            >
+              {fmtDayOfWeek.format(t)}
+            </text>
+          </Fragment>
         ))}
       </svg>
 
