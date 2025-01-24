@@ -56,7 +56,7 @@ export function Chart({ data }: { data: EmojiByDate }) {
   });
 
   const formatXTick = (date: Date) =>
-    date.getDate() === 1 || date === minDate
+    date.getDate() === 1 || date.toDateString() === minDate.toDateString()
       ? fmtWithMonth.format(date)
       : String(date.getDate());
 
