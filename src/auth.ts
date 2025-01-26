@@ -3,7 +3,7 @@ import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { z } from "zod";
-import ky from "ky";
+import ky, { HTTPError } from "ky";
 import TTLCache from "@isaacs/ttlcache";
 
 import prisma from "~/db";
@@ -151,8 +151,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       let guilds = cache.get(access_token);
       if (!guilds) {
-        guilds = await getAllowedGuilds(access_token);
-        cache.set(access_token, guilds);
+        try {
+          guilds = await getAllowedGuilds(access_token);
+          cache.set(access_token, guilds);
+        } catch (e) {
+          if (e instanceof HTTPError && e.response.status === 401) {
+            unauthorized();
+          }
+          throw new Error(`Error fetching allowed guilds: '${String(e)}'`, {
+            cause: e,
+          });
+        }
       }
 
       if (guilds.length === 0) {
