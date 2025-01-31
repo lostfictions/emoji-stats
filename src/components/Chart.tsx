@@ -38,7 +38,15 @@ export function Chart({ data }: { data: EmojiByDate }) {
     ),
   );
 
-  const xScale = d3.scaleUtc().domain([minDate, maxDate]).range([10, 90]);
+  const dateCount = differenceInDays(maxDate, minDate);
+
+  const colWidth = Math.min(100 / dateCount - 2, 5);
+
+  // TODO: there's probably a better way to do this automatically
+  // use d3.bandScale instead? should be responsive too
+  const range = dateCount > 20 ? [5, 95] : dateCount > 10 ? [10, 90] : [20, 80];
+
+  const xScale = d3.scaleUtc().domain([minDate, maxDate]).range(range);
 
   const yScale = d3
     .scaleLinear()
@@ -59,10 +67,6 @@ export function Chart({ data }: { data: EmojiByDate }) {
     date.getDate() === 1 || date.toDateString() === minDate.toDateString()
       ? fmtWithMonth.format(date)
       : String(date.getDate());
-
-  const dateCount = differenceInDays(maxDate, minDate);
-  const colWidth = Math.min(100 / dateCount - 2, 5);
-  console.log("colWidth", colWidth);
 
   return (
     <div
