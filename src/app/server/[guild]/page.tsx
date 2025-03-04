@@ -97,7 +97,7 @@ function getEmojiByDate({
 async function EmojiData({ guild }: { guild: Guild }) {
   // FIXME: make these configurable, pass to <Chart /> so it can render ticks
   // for leading and trailing empty days
-  const startTime = Date.now() - 1000 * 60 * 60 * 24 * 60;
+  const startTime = Date.now() - 1000 * 60 * 60 * 24 * 30;
   const endTime = Date.now() + 1000 * 60 * 60 * 24;
 
   const emojiByDate = await getEmojiByDate({
