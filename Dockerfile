@@ -1,5 +1,5 @@
 # should match value in .node-version file
-ARG NODE_VERSION=22.13.0
+ARG NODE_VERSION=22.14.0
 
 FROM node:${NODE_VERSION}-slim AS build
 WORKDIR /app
@@ -8,10 +8,8 @@ RUN apt-get update -y \
   && apt-get install --no-install-recommends -y openssl=3.0.15-1~deb12u1 jq=1.6-2.1 \
   && rm -rf /var/cache/apt/archives /var/lib/apt/lists
 RUN corepack enable
-COPY pnpm-lock.yaml ./
-RUN pnpm fetch
-COPY package.json ./
-RUN pnpm install --offline --frozen-lockfile
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY next.config.mjs postcss.config.json tailwind.config.js tsconfig.json ./
 COPY src ./src
 COPY prisma ./prisma
